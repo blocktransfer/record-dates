@@ -11,7 +11,7 @@ HorizonInstance = 'horizon.stellar.org'
 def StellarNonNative(queryAsset, issuerAddress, desiredDateISO8601):
     getAssetholdersBalancesNow(queryAsset, issuerAddress)
   
-    # Step 2 : Get all the transfers back `till the record date
+    # Step 2 : Get all the transfers after the record date
     recordDateBlockHeight = getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601)
     #
     
