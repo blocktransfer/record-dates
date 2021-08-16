@@ -8,10 +8,38 @@ import pprint as pprint
 searchLimitMax200 = '200'
 HorizonInstance = 'horizon.stellar.org'
 
+def StellarNonNative(queryAsset, issuerAddress, desiredDateISO8601):
+  recordDateBlockHeight = getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601)
+  
+  
+  # Step 1 : Get all the assetholders' balances today 
+  
+  # Step 2 : Get all the transfers back `till the record date
+  
+  # Step 3 : Update the balances from #1 based on #2
+  
+  
+  # From mergeBlockchainBalancesWithMSF in stellar-interface -> issuers : 
+  StellarBlockchainBalances = {}
+  requestAddress = 'https://' + HorizonInstance + '/accounts?asset=' + queryAsset + ':' + issuerAddress + '&limit=' + searchLimitMax200
+  data = requests.get(requestAddress).json()
+  blockchainRecords = data['_embedded']['records']
+  while(blockchainRecords != []):
+    for accounts in blockchainRecords:
+      accountAddress = accounts['id']
+      for balances in accounts['balances']:
+        if balances['asset_type'] != 'native' and balances['asset_code'] == queryAsset:
+          accountBalance = float(balances['balance'])
+          break
+      StellarBlockchainBalances[accountAddress] = accountBalance
+    # Go to next cursor
+    requestAddress = data['_links']['next']['href'].replace('%3A', ':')
+    data = requests.get(requestAddress).json()
+    blockchainRecords = data['_embedded']['records']
+  return StellarBlockchainBalances
 
-
-# Simple decriment + re-increment. To improve, could do merge sort
-def getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601):
+# Simple decriment + re-increment. To improve, we reccomend merge sort
+def getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601): # '20XX-MM-DDT00:00:00Z' ++record date
     print('\n')
     currentBlockHeight = requests.get('https://' + HorizonInstance).json()['core_latest_ledger']
     testSequenceNum = currentBlockHeight - 20000
@@ -43,9 +71,4 @@ def getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601):
         if (dateutil.parser.parse(blockTimeISO8601) < dateutil.parser.parse(desiredDateISO8601)):
             testSequenceNum += 1
         else: break
-    print('Final: ' + str(testSequenceNum) + ' closed at ' + str(blockTimeISO8601) + '\n')
     return testSequenceNum
-
-
-getFirstBlockHeightAfterOrEqualToDate('2021-8-12T0:00:00Z')
-
