@@ -2,8 +2,6 @@ import requests
 import json
 import dateutil.parser
 
-from pprint import pprint
-
 searchLimitMax200 = '200'
 HorizonInstance = 'horizon.stellar.org'
 
