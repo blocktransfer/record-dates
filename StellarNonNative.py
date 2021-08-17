@@ -92,7 +92,6 @@ def updateAssetholderBalancesBasedOnTransfersAfterRecordDate(queryAsset, issuerA
                 if transfer['transaction_successful'] and transfer['type'] == 'payment' and transfer['asset_type'] != 'native' and transfer['asset_issuer'] == issuerAddress and transfer['asset_code'] == queryAsset:
                     assetholderBalancesNow[transfer['from']] += float(transfer['amount'])
                     assetholderBalancesNow[transfer['to']] -= float(transfer['amount'])
-                    pprint('Updated transfer balances given' + str(transfer))
             requestAddress = data['_links']['next']['href'].replace('\u0026', '&')
             data = requests.get(requestAddress).json()
             blockPayments = data['_embedded']['records']
