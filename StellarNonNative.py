@@ -7,7 +7,7 @@ from pprint import pprint
 searchLimitMax200 = '200'
 HorizonInstance = 'horizon.stellar.org'
 
-def StellarNonNative(queryAsset, issuerAddress, desiredDateISO8601):
+def StellarNonNative(queryAsset, issuerAddress, desiredDateISO8601): # '20XX-MM-DDT00:00:00Z'
     # This breaks in environments with extremely high throughput,
     # namely wherein shareholders transfer assets so often that balances
     # change from the runtime of getting the current sequence number and
@@ -20,22 +20,13 @@ def StellarNonNative(queryAsset, issuerAddress, desiredDateISO8601):
     # transfers during the scripting period afterwards, ensuring no 
     # misappropriations of dividends or voting rights post-call.
     # To fix: impliment via direct ledger database records rather than API
+    # or uncover a different direct-ledger query to bypass txn simulation.
+    
     runtimeSequenceNumber = requests.get('https://' + HorizonInstance).json()['core_latest_ledger']
     assetholderBalancesNow = getAssetholderBalancesNow(queryAsset, issuerAddress)
-    # Step 2 : Get all the transfers after the record date
     recordDateBlockHeight = getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601)
-    recordDateAssetholderBalances = updateAssetholderBalances(queryAsset, issuerAddress, assetholderBalancesNow, runtimeSequenceNumber, recordDateBlockHeight)
-    
-    
-    # KNOW: /payments includes /operations transferring value 
-    # likewise, 
-    
-    #
-
-
-    # Step 3 : Update the balances from #1 based on #2
-
-    
+    recordDateAssetholderBalances = upda1teAssetholderBalancesBasedOnTransfersAfterRecordDate(queryAsset, issuerAddress, assetholderBalancesNow, runtimeSequenceNumber, recordDateBlockHeight)
+    return recordDateAssetholderBalances
 
 
 def getAssetholderBalancesNow(queryAsset, issuerAddress):
@@ -58,7 +49,7 @@ def getAssetholderBalancesNow(queryAsset, issuerAddress):
     return StellarBlockchainBalances
 
 # Simple decriment + re-increment. To improve, we reccomend merge sort. Med. priority if API calls maintained
-def getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601): # '20XX-MM-DDT00:00:00Z' ++record date
+def getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601): # ++record date (first allowable block @ 00:00:00Z of next day === EoD UST)
     currentBlockHeight = requests.get('https://' + HorizonInstance).json()['core_latest_ledger']
     testSequenceNum = currentBlockHeight - 20000
     while(True):
@@ -89,16 +80,17 @@ def getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601): # '20XX-MM-DDT00:
         if (dateutil.parser.parse(blockTimeISO8601) < dateutil.parser.parse(desiredDateISO8601)):
             testSequenceNum += 1
         else: break
+    print(blockTimeISO8601)
     return testSequenceNum
     
-def updateAssetholderBalances(queryAsset, issuerAddress, assetholderBalancesNow, runtimeSequenceNumber, recordDateBlockHeight):
+def updateAssetholderBalancesBasedOnTransfersAfterRecordDate(queryAsset, issuerAddress, assetholderBalancesNow, runtimeSequenceNumber, recordDateBlockHeight):
     while(recordDateBlockHeight <= runtimeSequenceNumber):
         # get recordDateBlockHeight ledger
         requestAddress = 'https://' + HorizonInstance + '/ledgers/' + str(recordDateBlockHeight) + '/payments'
         data = requests.get(requestAddress).json()
         blockPayments = data['_embedded']['records']
         while(blockPayments != []):
-            for transfer in blockPayments:                 #redundant transfer['type'] == 'payment'              # TODO: Important | Claimable balance & trade testing on mainnet---do claims show up here as transfers
+            for transfer in blockPayments:                 #redundant transfer['type'] == 'payment'              # TODO: Important | Claimed balances & trades are not accounted for
                 if transfer['transaction_successful'] and transfer['type'] == 'payment' and transfer['asset_type'] != 'native' and transfer['asset_issuer'] == issuerAddress and transfer['asset_code'] == queryAsset:
                     assetholderBalancesNow[transfer['from']] += float(transfer['amount'])
                     assetholderBalancesNow[transfer['to']] -= float(transfer['amount'])
@@ -106,29 +98,5 @@ def updateAssetholderBalances(queryAsset, issuerAddress, assetholderBalancesNow,
             requestAddress = data['_links']['next']['href'].replace('\u0026', '&')
             data = requests.get(requestAddress).json()
             blockPayments = data['_embedded']['records']
-            #print(recordDateBlockHeight)
             recordDateBlockHeight += 1
-    print('Done')
-    pprint(assetHolderBalancesNow)
     return assetholderBalancesNow
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-StellarNonNative('StellarMart', 'GD3VPKNLTLBEKRY56AQCRJ5JN426BGQEPE6OIX3DDTSEEHQRYIHIUGUM', '2021-04-29T00:00:00Z')
