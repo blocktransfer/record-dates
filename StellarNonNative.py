@@ -25,7 +25,7 @@ def StellarNonNative(queryAsset, issuerAddress, desiredDateISO8601): # '20XX-MM-
     runtimeSequenceNumber = requests.get('https://' + HorizonInstance).json()['core_latest_ledger']
     assetholderBalancesNow = getAssetholderBalancesNow(queryAsset, issuerAddress)
     recordDateBlockHeight = getFirstBlockHeightAfterOrEqualToDate(desiredDateISO8601)
-    recordDateAssetholderBalances = upda1teAssetholderBalancesBasedOnTransfersAfterRecordDate(queryAsset, issuerAddress, assetholderBalancesNow, runtimeSequenceNumber, recordDateBlockHeight)
+    recordDateAssetholderBalances = updateAssetholderBalancesBasedOnTransfersAfterRecordDate(queryAsset, issuerAddress, assetholderBalancesNow, runtimeSequenceNumber, recordDateBlockHeight)
     return recordDateAssetholderBalances
 
 
